@@ -74,4 +74,52 @@ class BookTrackerApp:
             messagebox.showerror("Ошибка", "Количество страниц должно быть положительным числом!")
             return
 
-        book
+        book = {"title": title, "author": author, "genre": genre, "pages": pages}
+        self.books.append(book)
+        self.save_books()
+        self.update_tree()
+
+    def update_tree(self):
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        for book in self.books:
+            self.tree.insert("", "end", values=(book["title"], book["author"], book["genre"], book["pages"]))
+
+    def apply_filter(self):
+        genre_filter = self.filter_genre.get().strip().lower()
+        try:
+            pages_filter = int(self.filter_pages.get().strip())
+            if pages_filter < 0:
+                raise ValueError
+        except ValueError:
+            pages_filter = None
+
+        filtered_books = self.books
+
+        if genre_filter:
+            filtered_books = [b for b in filtered_books if genre_filter in b["genre"].lower()]
+
+        if pages_filter is not None:
+            filtered_books = [b for b in filtered_books if b["pages"] > pages_filter]
+
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        for book in filtered_books:
+            self.tree.insert("", "end", values=(book["title"], book["author"], book["genre"], book["pages"]))
+
+    def save_books(self):
+        with open(BOOKS_FILE, "w", encoding="utf-8") as f:
+            json.dump(self.books, f, ensure_ascii=False, indent=4)
+
+    def load_books(self):
+        if os.path.exists(BOOKS_FILE):
+            with open(BOOKS_FILE, "r", encoding="utf-8") as f:
+                try:
+                    self.books = json.load(f)
+                except json.JSONDecodeError:
+                    self.books = []
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = BookTrackerApp(root)
+    root.mainloop()
